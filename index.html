@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GuestPass - Wi-Fi Guest Card</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -21,17 +23,17 @@
             border: 1px solid rgba(255, 255, 255, 0.3);
             box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
         }
-        
+
         .glass-input {
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
             color: white;
         }
-        
+
         .glass-input::placeholder {
             color: rgba(255, 255, 255, 0.6);
         }
-        
+
         .glass-input:focus {
             outline: none;
             background: rgba(255, 255, 255, 0.2);
@@ -43,13 +45,15 @@
             body {
                 background: white;
                 color: black;
-                display: block; 
+                display: block;
                 height: auto;
                 min-height: auto;
             }
+
             .no-print {
                 display: none !important;
             }
+
             .print-only {
                 display: block !important;
                 position: absolute;
@@ -63,6 +67,7 @@
                 box-shadow: none;
                 background: white;
             }
+
             .card-container {
                 border: 2px solid black;
                 border-radius: 1rem;
@@ -73,12 +78,13 @@
                 page-break-inside: avoid;
             }
         }
-        
+
         .print-only {
             display: none;
         }
     </style>
 </head>
+
 <body class="flex items-center justify-center p-4">
 
     <!-- Main Container -->
@@ -91,20 +97,18 @@
         <form id="wifiForm" class="space-y-6">
             <div>
                 <label for="ssid" class="block text-sm font-medium text-white mb-1">Network Name (SSID)</label>
-                <input type="text" id="ssid" name="ssid" required 
-                    class="glass-input w-full rounded-lg px-4 py-3 transition-colors"
-                    placeholder="e.g. MyHomeWiFi">
+                <input type="text" id="ssid" name="ssid" required
+                    class="glass-input w-full rounded-lg px-4 py-3 transition-colors" placeholder="e.g. MyHomeWiFi">
             </div>
 
             <div>
                 <label for="password" class="block text-sm font-medium text-white mb-1">Password</label>
                 <input type="text" id="password" name="password" required
-                    class="glass-input w-full rounded-lg px-4 py-3 transition-colors"
-                    placeholder="Enter password">
+                    class="glass-input w-full rounded-lg px-4 py-3 transition-colors" placeholder="Enter password">
                 <p class="text-xs text-white/50 mt-1">Passwords are not stored.</p>
             </div>
 
-            <button type="submit" 
+            <button type="submit"
                 class="w-full bg-white text-indigo-900 font-bold py-3 px-4 rounded-lg hover:bg-indigo-50 transition-colors shadow-lg transform hover:-translate-y-0.5">
                 Generate Card
             </button>
@@ -121,12 +125,14 @@
             </div>
             <p id="displaySSID" class="text-xl text-white font-semibold mb-2"></p>
             <p id="displayPassword" class="text-white/80 font-mono mb-6"></p>
-            
+
             <div class="flex gap-4 justify-center">
-                <button onclick="window.print()" class="bg-white text-indigo-900 font-bold py-2 px-6 rounded-lg hover:bg-indigo-50 transition-colors shadow-md">
+                <button onclick="window.print()"
+                    class="bg-white text-indigo-900 font-bold py-2 px-6 rounded-lg hover:bg-indigo-50 transition-colors shadow-md">
                     Print
                 </button>
-                <button onclick="resetForm()" class="bg-white/20 text-white font-bold py-2 px-6 rounded-lg hover:bg-white/30 transition-colors border border-white/30">
+                <button onclick="resetForm()"
+                    class="bg-white/20 text-white font-bold py-2 px-6 rounded-lg hover:bg-white/30 transition-colors border border-white/30">
                     New
                 </button>
             </div>
@@ -137,9 +143,9 @@
             <div class="card-container flex flex-col items-center justify-center font-sans">
                 <h1 class="text-4xl font-bold mb-2">Wi-Fi Guest Access</h1>
                 <p class="text-gray-600 mb-8">Scan to connect</p>
-                
+
                 <img id="printQrImage" src="" class="w-64 h-64 mb-6 border-4 border-gray-900 rounded-lg">
-                
+
                 <div class="text-left w-full max-w-xs space-y-4">
                     <div class="border-b-2 border-gray-200 pb-2">
                         <p class="text-sm text-gray-500 uppercase tracking-wide">Network</p>
@@ -150,7 +156,7 @@
                         <p id="printPassword" class="text-2xl font-mono break-all"></p>
                     </div>
                 </div>
-                
+
                 <div class="mt-12 text-sm text-gray-400">
                     Generated by GuestPass
                 </div>
@@ -161,32 +167,43 @@
     <script>
         const form = document.getElementById('wifiForm');
         const resultArea = document.getElementById('resultArea');
-        const mainContainer = document.querySelector('.glass.no-print'); // The form container
+        const mainContainer = document.querySelector('.glass.no-print');
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const ssid = document.getElementById('ssid').value;
             const password = document.getElementById('password').value;
+            const encryption = 'WPA';
 
             try {
-                const response = await fetch('/api/generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ssid, password })
+                // Escape special characters for WIFI string
+                const escape = (str) => str.replace(/([\\;,:])/g, '\\$1');
+                const cleanSSID = escape(ssid);
+                const cleanPassword = escape(password);
+
+                // Construct WIFI String
+                let wifiString = `WIFI:S:${cleanSSID};T:${encryption};P:${cleanPassword};;`;
+
+                // Generate QR Code Data URL
+                const qrDataUrl = await QRCode.toDataURL(wifiString, {
+                    errorCorrectionLevel: 'M',
+                    type: 'image/png',
+                    margin: 4,
+                    width: 300,
+                    color: {
+                        dark: '#000000',
+                        light: '#ffffff'
+                    }
                 });
 
-                if (!response.ok) throw new Error('Generation failed');
-
-                const data = await response.json();
-                
                 // Update UI
-                document.getElementById('qrImage').src = data.qrCode;
-                document.getElementById('printQrImage').src = data.qrCode;
-                
+                document.getElementById('qrImage').src = qrDataUrl;
+                document.getElementById('printQrImage').src = qrDataUrl;
+
                 document.getElementById('displaySSID').textContent = ssid;
                 document.getElementById('displayPassword').textContent = password;
-                
+
                 document.getElementById('printSSID').textContent = ssid;
                 document.getElementById('printPassword').textContent = password;
 
@@ -207,4 +224,5 @@
         }
     </script>
 </body>
+
 </html>
