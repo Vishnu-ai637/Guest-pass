@@ -1,0 +1,24 @@
+{
+    "name": "guestpass",
+    "version": "1.0.0",
+    "description": "Wi-Fi QR Code Generator",
+    "main": "server.ts",
+    "type": "module",
+    "scripts": {
+        "start": "node --experimental-strip-types server.ts",
+        "dev": "node --watch --experimental-strip-types server.ts"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "express": "^4.21.2",
+        "qrcode": "^1.5.4"
+    },
+    "devDependencies": {
+        "@types/express": "^5.0.0",
+        "@types/node": "^22.10.2",
+        "@types/qrcode": "^1.5.5",
+        "typescript": "^5.7.2"
+    }
+}
